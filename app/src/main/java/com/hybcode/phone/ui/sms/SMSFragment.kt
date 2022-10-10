@@ -28,41 +28,56 @@
  *
  */
 
-package com.hybcode.phone.ui.notifications
+package com.hybcode.phone.ui.sms
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
-import com.hybcode.phone.databinding.FragmentNotificationsBinding
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.hybcode.phone.CommunicationViewModel
+import com.hybcode.phone.MainActivity
+import com.hybcode.phone.databinding.FragmentSmsBinding
 
-class NotificationsFragment : Fragment() {
+class SMSFragment : Fragment() {
 
-    private var _binding: FragmentNotificationsBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
+    private var _binding: FragmentSmsBinding? = null
     private val binding get() = _binding!!
+    private val communicationViewModel: CommunicationViewModel by activityViewModels()
+    private lateinit var callingActivity: MainActivity
+    private lateinit var smsAdapter: SMSAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val notificationsViewModel =
-            ViewModelProvider(this).get(NotificationsViewModel::class.java)
+        _binding = FragmentSmsBinding.inflate(inflater, container, false)
+        callingActivity = activity as MainActivity
+        smsAdapter = SMSAdapter(callingActivity)
+        return binding.root
+    }
 
-        _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        val textView: TextView = binding.textNotifications
-        notificationsViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
+    @SuppressLint("NotifyDataSetChanged")
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.callLog.layoutManager = LinearLayoutManager(activity)
+        binding.callLog.adapter = smsAdapter
+        callingActivity.getTexts()
+        communicationViewModel.texts.observe(viewLifecycleOwner) { texts ->
+            texts?.let {
+                smsAdapter.texts = it
+                smsAdapter.notifyDataSetChanged()
+            }
         }
-        return root
+        binding.fab.setOnClickListener {
+            callingActivity.openDialog(SendSMS(null))
+        }
     }
 
     override fun onDestroyView() {
