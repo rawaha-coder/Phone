@@ -28,41 +28,50 @@
  *
  */
 
-package com.hybcode.phone.ui.dashboard
+package com.hybcode.phone.ui.callLog
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import com.hybcode.phone.databinding.FragmentDashboardBinding
+import androidx.fragment.app.activityViewModels
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.hybcode.phone.CommunicationViewModel
+import com.hybcode.phone.MainActivity
+import com.hybcode.phone.databinding.FragmentCallLogBinding
 
-class DashboardFragment : Fragment() {
+class CallLogFragment : Fragment() {
 
-    private var _binding: FragmentDashboardBinding? = null
-
-    // This property is only valid between onCreateView and
-    // onDestroyView.
+    private var _binding: FragmentCallLogBinding? = null
+    private lateinit var callingActivity: MainActivity
+    private lateinit var callLogAdapter: CallLogAdapter
     private val binding get() = _binding!!
+    private val communicationViewModel: CommunicationViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val dashboardViewModel =
-            ViewModelProvider(this).get(DashboardViewModel::class.java)
+        _binding = FragmentCallLogBinding.inflate(inflater, container, false)
+        callingActivity = activity as MainActivity
+        callLogAdapter = CallLogAdapter(callingActivity)
+        return binding.root
+    }
 
-        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-
-        val textView: TextView = binding.textDashboard
-        dashboardViewModel.text.observe(viewLifecycleOwner) {
-            textView.text = it
+    @SuppressLint("NotifyDataSetChanged")
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {super.onViewCreated(view, savedInstanceState)
+        binding.root.layoutManager = LinearLayoutManager(activity)
+        binding.root.adapter = callLogAdapter
+        callingActivity.getCallLogs()
+        communicationViewModel.callLog.observe(viewLifecycleOwner) { log ->
+            log?.let {
+                callLogAdapter.callLog = it.take(10)
+                callLogAdapter.notifyDataSetChanged()
+            }
         }
-        return root
     }
 
     override fun onDestroyView() {
